@@ -39,7 +39,21 @@ export default function Home() {
   const generateDeepLink = (payType: string) => {
     // Encode UPI ID for URL
     const encodedUpiId = encodeURIComponent(receiverUpiId);
-    const baseUPILink = `upi://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
+    
+    // Generate transaction reference ID
+    const transactionRef = `TXN${Date.now()}`;
+    const transactionNote = 'Payment';
+    
+    // Build UPI parameters with additional required fields
+    const upiParams = new URLSearchParams({
+      pa: receiverUpiId,
+      am: amount.toString(),
+      cu: 'INR',
+      tn: transactionNote,
+      tr: transactionRef,
+    });
+    
+    const baseUPILink = `upi://pay?${upiParams.toString()}`;
     
     if (payType === 'upi' || payType === 'manual') {
       return baseUPILink;
@@ -113,6 +127,12 @@ export default function Home() {
               <code className="text-xs font-mono text-black dark:text-zinc-50 break-all">
                 {getCurrentDeepLink()}
               </code>
+            </div>
+            <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
+              <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                <strong>Note:</strong> Payment apps may show "risk policy violation" when triggered from web browsers. 
+                This is a security measure. For production use, consider using UPI Intent URLs or native app integration.
+              </p>
             </div>
           </div>
         </div>
