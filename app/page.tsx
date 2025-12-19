@@ -32,9 +32,42 @@ const upiList: { [key: number]: any } = {
 
 export default function Home() {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
-  
+    
   const amount = 15;
   const receiverUpiId = 'sushrutathawale1509@oksbi';
+
+  const generateDeepLink = (payType: string) => {
+    // Encode UPI ID for URL
+    const encodedUpiId = encodeURIComponent(receiverUpiId);
+    const baseUPILink = `upi://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
+    
+    if (payType === 'upi' || payType === 'manual') {
+      return baseUPILink;
+    }
+    
+    // Map payment types to their protocols
+    const upiProtocols: { [key: string]: string } = {
+      'phonepe': 'phonepe://pay',
+      'gpay': 'tez://pay',
+      'paytmmp': 'paytmmp://pay',
+    };
+    
+    if (baseUPILink && baseUPILink.startsWith('upi://pay?')) {
+      const linkParts = baseUPILink.split('?');
+      return `${upiProtocols[payType]}?${linkParts[1]}`;
+    }
+    
+    return baseUPILink;
+  };
+
+  const getCurrentDeepLink = () => {
+    if (selectedOption === null) {
+      return generateDeepLink('upi');
+    }
+    const selectedPayment = upiList[selectedOption];
+    if (!selectedPayment) return generateDeepLink('upi');
+    return generateDeepLink(selectedPayment.protoName);
+  };
 
   const handleProceed = () => {
     if (selectedOption === null) {
@@ -42,35 +75,8 @@ export default function Home() {
       return;
     }
 
-    const selectedPayment = upiList[selectedOption];
-    if (!selectedPayment) return;
-
-    // Encode UPI ID for URL
-    const encodedUpiId = encodeURIComponent(receiverUpiId);
+    const deepLink = getCurrentDeepLink();
     
-    // Construct deep link based on protoName with amount and UPI ID
-    let deepLink = '';
-    
-    switch (selectedPayment.protoName) {
-      case 'phonepe':
-        deepLink = `phonepe://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
-        break;
-      case 'gpay':
-        deepLink = `tez://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`; // Google Pay uses 'tez' protocol
-        break;
-      case 'paytmmp':
-        deepLink = `paytmmp://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
-        break;
-      case 'upi':
-        deepLink = `upi://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
-        break;
-      case 'manual':
-        deepLink = `upi://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
-        break;
-      default:
-        deepLink = `upi://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
-    }
-
     // Trigger deep link
     window.location.href = deepLink;
     
@@ -96,6 +102,18 @@ export default function Home() {
             <span className="text-sm font-mono text-black dark:text-zinc-50 break-all text-right">
               {receiverUpiId}
             </span>
+          </div>
+        </div>
+
+        {/* Deep Link Display */}
+        <div className="w-full bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-4">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Deep Link:</span>
+            <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded border border-gray-200 dark:border-gray-700">
+              <code className="text-xs font-mono text-black dark:text-zinc-50 break-all">
+                {getCurrentDeepLink()}
+              </code>
+            </div>
           </div>
         </div>
         
