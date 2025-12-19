@@ -36,51 +36,70 @@ export default function Home() {
   const amount = 15;
   const receiverUpiId = 'sushrutathawale1509@oksbi';
 
-  const generateDeepLink = (payType: string) => {
-    // Encode UPI ID for URL
-    const encodedUpiId = encodeURIComponent(receiverUpiId);
-    
-    // Generate transaction reference ID
-    const transactionRef = `TXN${Date.now()}`;
-    const transactionNote = 'Payment';
-    
-    // Build UPI parameters with additional required fields
-    const upiParams = new URLSearchParams({
-      pa: receiverUpiId,
-      am: amount.toString(),
-      cu: 'INR',
-      tn: transactionNote,
-      tr: transactionRef,
-    });
-    
-    const baseUPILink = `upi://pay?${upiParams.toString()}`;
-    
-    if (payType === 'upi' || payType === 'manual') {
-      return baseUPILink;
-    }
-    
-    // Map payment types to their protocols
-    const upiProtocols: { [key: string]: string } = {
-      'phonepe': 'phonepe://pay',
-      'gpay': 'tez://pay',
-      'paytmmp': 'paytmmp://pay',
-    };
-    
+  // Generate transaction reference ID
+  const transactionRef = `TXN${Date.now()}`;
+  const transactionNote = 'Payment';
+  
+  // Build UPI parameters
+  const upiParams = new URLSearchParams({
+    pa: receiverUpiId,
+    am: amount.toString(),
+    cu: 'INR',
+    tn: transactionNote,
+    tr: transactionRef,
+  });
+  
+  // Create bankDetails with paymentLink (base UPI link with all parameters)
+  const bankDetails = {
+    paymentLink: `upi://pay?${upiParams.toString()}`
+  };
+
+  // UPI protocols mapping
+  const upiProtocols: { [key: string]: string } = {
+    'phonepe': 'phonepe://pay',
+    'gpay': 'tez://pay',
+    'paytmmp': 'paytmmp://pay',
+  };
+
+  // Build links function as provided
+  const buildLinks = (payType = 'upi') => {
+    let result = '';
+    let baseUPILink = bankDetails?.paymentLink;
     if (baseUPILink && baseUPILink.startsWith('upi://pay?')) {
-      const linkParts = baseUPILink.split('?');
-      return `${upiProtocols[payType]}?${linkParts[1]}`;
+      if (payType === 'upi' || payType === 'manual') {
+        result = baseUPILink;
+      } else {
+        const linkParts = baseUPILink.split('?');
+        result = `${upiProtocols[payType]}?${linkParts[1]}`;
+      }
+      return result;
     }
+    return '';
+  };
+
+  // Extract parameters from the base UPI link
+  const getLinkParameters = () => {
+    const baseLink = bankDetails?.paymentLink;
+    if (!baseLink) return {};
     
-    return baseUPILink;
+    const params: { [key: string]: string } = {};
+    if (baseLink.includes('?')) {
+      const queryString = baseLink.split('?')[1];
+      const urlParams = new URLSearchParams(queryString);
+      urlParams.forEach((value, key) => {
+        params[key] = value;
+      });
+    }
+    return params;
   };
 
   const getCurrentDeepLink = () => {
     if (selectedOption === null) {
-      return generateDeepLink('upi');
+      return buildLinks('upi');
     }
     const selectedPayment = upiList[selectedOption];
-    if (!selectedPayment) return generateDeepLink('upi');
-    return generateDeepLink(selectedPayment.protoName);
+    if (!selectedPayment) return buildLinks('upi');
+    return buildLinks(selectedPayment.protoName);
   };
 
   const handleProceed = () => {
@@ -128,6 +147,28 @@ export default function Home() {
                 {getCurrentDeepLink()}
               </code>
             </div>
+            
+            {/* Parameters Display */}
+            <div className="mt-3">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2 block">
+                Parameters in Deep Link:
+              </span>
+              <div className="bg-gray-50 dark:bg-gray-900 p-3 rounded border border-gray-200 dark:border-gray-700">
+                <div className="space-y-1">
+                  {Object.entries(getLinkParameters()).map(([key, value]) => (
+                    <div key={key} className="flex gap-2 text-xs">
+                      <span className="font-semibold text-blue-600 dark:text-blue-400 min-w-[60px]">
+                        {key}:
+                      </span>
+                      <span className="font-mono text-black dark:text-zinc-50 break-all">
+                        {value}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
             <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
               <p className="text-xs text-yellow-800 dark:text-yellow-200">
                 <strong>Note:</strong> Payment apps may show "risk policy violation" when triggered from web browsers. 
