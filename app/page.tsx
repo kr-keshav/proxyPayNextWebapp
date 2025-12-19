@@ -32,6 +32,9 @@ const upiList: { [key: number]: any } = {
 
 export default function Home() {
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  
+  const amount = 15;
+  const receiverUpiId = 'sushrutathawale1509@oksbi';
 
   const handleProceed = () => {
     if (selectedOption === null) {
@@ -42,28 +45,30 @@ export default function Home() {
     const selectedPayment = upiList[selectedOption];
     if (!selectedPayment) return;
 
-    // Construct deep link based on protoName
+    // Encode UPI ID for URL
+    const encodedUpiId = encodeURIComponent(receiverUpiId);
+    
+    // Construct deep link based on protoName with amount and UPI ID
     let deepLink = '';
     
     switch (selectedPayment.protoName) {
       case 'phonepe':
-        deepLink = 'phonepe://pay';
+        deepLink = `phonepe://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
         break;
       case 'gpay':
-        deepLink = 'tez://pay'; // Google Pay uses 'tez' protocol
+        deepLink = `tez://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`; // Google Pay uses 'tez' protocol
         break;
       case 'paytmmp':
-        deepLink = 'paytmmp://pay';
+        deepLink = `paytmmp://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
         break;
       case 'upi':
-        deepLink = 'upi://pay';
+        deepLink = `upi://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
         break;
       case 'manual':
-        // For manual UPI ID, you might want to show a form or different flow
-        deepLink = 'upi://pay';
+        deepLink = `upi://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
         break;
       default:
-        deepLink = 'upi://pay';
+        deepLink = `upi://pay?pa=${encodedUpiId}&am=${amount}&cu=INR`;
     }
 
     // Trigger deep link
@@ -79,6 +84,20 @@ export default function Home() {
         <h1 className="text-3xl font-semibold text-black dark:text-zinc-50 mb-4">
           Select Payment Method
         </h1>
+        
+        {/* Payment Details */}
+        <div className="w-full bg-white dark:bg-gray-800 rounded-lg border-2 border-gray-200 dark:border-gray-700 p-6 space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 dark:text-gray-400 font-medium">Amount:</span>
+            <span className="text-2xl font-bold text-black dark:text-zinc-50">₹{amount}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600 dark:text-gray-400 font-medium">Receiver:</span>
+            <span className="text-sm font-mono text-black dark:text-zinc-50 break-all text-right">
+              {receiverUpiId}
+            </span>
+          </div>
+        </div>
         
         <div className="w-full space-y-3">
           {Object.entries(upiList).map(([key, payment]) => {
